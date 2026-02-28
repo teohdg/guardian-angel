@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guardian AI — Proactive Safety Check-in</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #0f1419;
+      --bg-card: #1a222d;
+      --bg-input: #242f3d;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(0, 212, 170, 0.5);
+      --text: #e8ecf0;
+      --text-muted: #8b9aab;
+      --accent: #00d4aa;
+      --accent-dim: #00a885;
+      --accent-glow: rgba(0, 212, 170, 0.25);
+      --success: #22c55e;
+      --error: #ef4444;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --font-heading: 'Outfit', system-ui, sans-serif;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+      --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      --transition-fast: 0.2s var(--ease);
+      --transition-med: 0.3s var(--ease);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-body);
+      font-weight: 400;
+      color: var(--text);
+      background: var(--bg-deep);
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 212, 170, 0.12), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(0, 168, 133, 0.08), transparent);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      line-height: 1.5;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 440px;
+    }
+
+    /* Logo + branding */
+    .brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      animation: fadeInDown 0.6s var(--ease) both;
+    }
+    .logo {
+      width: 72px;
+      height: 72px;
+      transition: transform var(--transition-med);
+    }
+    .logo:hover {
+      transform: scale(1.05) rotate(-2deg);
+    }
+    .brand h1 {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 1.75rem;
+      letter-spacing: -0.02em;
+      margin: 0;
+      background: linear-gradient(135deg, var(--text) 0%, var(--text-muted) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .brand p {
+      margin: 0;
+      font-size: 0.9375rem;
+      color: var(--text-muted);
+      text-align: center;
+      max-width: 320px;
+    }
+
+    /* Card */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+      animation: fadeInUp 0.5s var(--ease) 0.15s both;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+    .form-group:last-of-type { margin-bottom: 1.5rem; }
+    label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 0.375rem;
+      transition: color var(--transition-fast);
+    }
+    input, textarea {
+      width: 100%;
+      font-family: var(--font-body);
+      font-size: 0.9375rem;
+      color: var(--text);
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+    }
+    input::placeholder, textarea::placeholder {
+      color: var(--text-muted);
+      opacity: 0.7;
+    }
+    input:hover, textarea:hover {
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+      background: rgba(36, 47, 61, 0.9);
+    }
+    textarea {
+      resize: vertical;
+      min-height: 96px;
+    }
+
+    .btn {
+      width: 100%;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      font-size: 0.9375rem;
+      letter-spacing: 0.02em;
+      color: var(--bg-deep);
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 0.875rem 1.25rem;
+      cursor: pointer;
+      transition: background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+    }
+    .btn:hover {
+      background: var(--accent-dim);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px var(--accent-glow);
+    }
+    .btn:active {
+      transform: translateY(0);
+    }
+    .btn:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    #result {
+      margin-top: 1.25rem;
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      line-height: 1.5;
+      min-height: 3rem;
+      transition: background var(--transition-fast), color var(--transition-fast), opacity var(--transition-med);
+    }
+    #result:not(:empty) {
+      animation: fadeIn 0.3s var(--ease);
+    }
+    #result.success {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    #result.error {
+      background: rgba(239, 68, 68, 0.12);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="brand">
+      <svg class="logo" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#00d4aa"/>
+            <stop offset="100%" stop-color="#00a885"/>
+          </linearGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        <path d="M36 6L12 16v18c0 16 10 26 24 32 14-6 24-16 24-32V16L36 6z" stroke="url(#shieldGrad)" stroke-width="2.5" fill="none" stroke-linejoin="round" filter="url(#glow)"/>
+        <path d="M26 36l8 8 16-18" stroke="url(#shieldGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+      <h1>Guardian AI</h1>
+      <p>Schedule a safety check-in call. Set your safe word and escalation word.</p>
+    </header>
+
+    <main class="card">
+      <form id="activate-form">
+        <div class="form-group">
+          <label for="userPhone">Your Phone Number</label>
+          <input type="tel" id="userPhone" placeholder="+1 234 567 8900" required>
+        </div>
+        <div class="form-group">
+          <label for="scheduledAt">Check-in Time</label>
+          <input type="datetime-local" id="scheduledAt" required>
+        </div>
+        <div class="form-group">
+          <label for="safeWord">Safe Word <span style="color: var(--text-muted); font-weight: 400;">(everything is fine)</span></label>
+          <input type="text" id="safeWord" placeholder="e.g. I'm a bit hungry" required>
+        </div>
+        <div class="form-group">
+          <label for="escalationWord">Escalation Word <span style="color: var(--text-muted); font-weight: 400;">(need help)</span></label>
+          <input type="text" id="escalationWord" placeholder="e.g. I'm feeling a bit sleepy" required>
+        </div>
+        <div class="form-group">
+          <label for="contacts">Emergency Contacts <span style="color: var(--text-muted); font-weight: 400;">(one per line, first = primary)</span></label>
+          <textarea id="contacts" rows="4" placeholder="+1 234 567 8900&#10;+1 987 654 3210" required></textarea>
+        </div>
+        <button type="submit" class="btn">Activate</button>
+      </form>
+
+      <div id="result" role="status" aria-live="polite"></div>
+    </main>
+  </div>
+
+  <script>
+    const form = document.getElementById('activate-form');
+    const result = document.getElementById('result');
+
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 5);
+    document.getElementById('scheduledAt').value = now.toISOString().slice(0, 16);
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      result.textContent = 'Activating...';
+      result.className = '';
+      result.setAttribute('aria-live', 'polite');
+
+      const contactsText = document.getElementById('contacts').value.trim();
+      const contactLines = contactsText.split('\n').filter(s => s.trim());
+      const contacts = contactLines.map((phone, i) => ({
+        phone: phone.trim(),
+        isPrimary: i === 0
+      }));
+
+      const payload = {
+        userPhone: document.getElementById('userPhone').value.trim(),
+        scheduledAt: new Date(document.getElementById('scheduledAt').value).toISOString(),
+        safeWord: document.getElementById('safeWord').value.trim(),
+        escalationWord: document.getElementById('escalationWord').value.trim(),
+        contacts
+      };
+
+      try {
+        const res = await fetch('/api/activate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          result.textContent = 'Success! ' + data.message + ' Session ID: ' + data.sessionId;
+          result.className = 'success';
+        } else {
+          result.textContent = 'Error: ' + (data.error || res.statusText);
+          result.className = 'error';
+        }
+      } catch (err) {
+        result.textContent = 'Error: ' + err.message;
+        result.className = 'error';
+      }
+    };
+  </script>
+</body>
+</html>
