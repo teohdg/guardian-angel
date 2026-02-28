@@ -32,12 +32,12 @@ if (!tableExists) {
 /**
  * Create a new session
  */
-function createSession({ id, userPhone, safeWord, escalationWord, scheduledAt }) {
+function createSession({ id, userPhone, safeWord, escalationWord, scheduledAt, location = null }) {
   const stmt = db.prepare(`
-    INSERT INTO sessions (id, user_phone, safe_word, escalation_word, scheduled_at, status)
-    VALUES (?, ?, ?, ?, ?, 'pending')
+    INSERT INTO sessions (id, user_phone, safe_word, escalation_word, scheduled_at, location, status)
+    VALUES (?, ?, ?, ?, ?, ?, 'pending')
   `);
-  stmt.run(id, userPhone, safeWord, escalationWord, scheduledAt);
+  stmt.run(id, userPhone, safeWord, escalationWord, scheduledAt, location);
   return id;
 }
 
@@ -89,6 +89,15 @@ function updateSessionStatus(sessionId, status) {
 }
 
 /**
+ * Update session location
+ */
+function updateSessionLocation(sessionId, location) {
+  db.prepare(`
+    UPDATE sessions SET location = ?, updated_at = datetime('now') WHERE id = ?
+  `).run(location, sessionId);
+}
+
+/**
  * Log event
  */
 function logEvent(sessionId, eventType, payload = null) {
@@ -127,6 +136,7 @@ module.exports = {
   getSession,
   getPendingSessions,
   updateSessionStatus,
+  updateSessionLocation,
   logEvent,
   getPrimaryContact,
   getEmergencyContacts,

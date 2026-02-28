@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guardian AI - Submit Location</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .alert-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .form-section {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+        
+        .btn-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+            text-align: center;
+        }
+        
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 12px 15px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            font-size: 14px;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #e0e0e0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="alert-icon">🚨</div>
+            <h1>Emergency Alert</h1>
+            <p class="subtitle">Your emergency contacts have been notified. Please provide your location to help them reach you.</p>
+        </div>
+        
+        <div class="info-box">
+            ℹ️ Your location will be sent to your emergency contacts immediately.
+        </div>
+        
+        <form id="locationForm">
+            <div class="form-section">
+                <label for="location">Your Location *</label>
+                <textarea 
+                    id="location" 
+                    name="location" 
+                    placeholder="e.g., 123 Main St, Apt 4B, Springfield, IL 62701 or GPS coordinates"
+                    required></textarea>
+                <small style="color: #999; display: block; margin-top: 5px;">Be as specific as possible to help responders find you</small>
+            </div>
+            
+            <div class="button-group">
+                <button type="submit" class="btn-submit" id="submitBtn">
+                    Send Location
+                </button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <span class="spinner"></span>
+                Sending location...
+            </div>
+            
+            <div class="message" id="message"></div>
+        </form>
+    </div>
+    
+    <script>
+        // Get sessionId from URL
+        const params = new URLSearchParams(window.location.search);
+        const sessionId = params.get('sessionId');
+        
+        if (!sessionId) {
+            document.getElementById('message').textContent = 'Error: Missing session ID';
+            document.getElementById('message').className = 'message error';
+            document.getElementById('submitBtn').disabled = true;
+        }
+        
+        document.getElementById('locationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const location = document.getElementById('location').value.trim();
+            
+            if (!location) {
+                showMessage('Please enter your location', 'error');
+                return;
+            }
+            
+            if (location.length > 500) {
+                showMessage('Location is too long (max 500 characters)', 'error');
+                return;
+            }
+            
+            const btn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            
+            btn.disabled = true;
+            loading.style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/send-location', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        sessionId,
+                        location,
+                    }),
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showMessage('✓ Location sent to emergency contacts. Stay safe!', 'success');
+                    document.getElementById('locationForm').reset();
+                    btn.disabled = false;
+                    loading.style.display = 'none';
+                } else {
+                    showMessage(data.error || 'Failed to send location', 'error');
+                    btn.disabled = false;
+                    loading.style.display = 'none';
+                }
+            } catch (err) {
+                showMessage('Network error: ' + err.message, 'error');
+                btn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+        
+        function showMessage(text, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = 'message ' + type;
+        }
+    </script>
+</body>
+</html>

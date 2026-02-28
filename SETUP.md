@@ -128,6 +128,11 @@ Go to [http://localhost:3000](http://localhost:3000)
 
 ---
 
+## Public URL vs API keys (important)
+
+- **Public URL** = The *address* of your app (e.g. `https://your-app.onrender.com` or `https://abc.ngrok.io`) must be reachable from the internet so **Twilio’s servers** can send webhook requests to your server when a call is answered. That’s what “has to be public” means.
+- **API keys stay secret.** They live in your `.env` (local) or in your host’s Environment Variables (deployed). They are never in the GitHub repo or in the browser. Making the app’s URL public does **not** expose your keys.
+
 ## Testing with ngrok
 
 Twilio must reach your webhooks via a **public URL**. Localhost is not reachable. Use ngrok:
@@ -170,6 +175,11 @@ Restart the server. Now when Twilio receives a call, it will use this URL for we
 ---
 
 ## Calls not going through – troubleshooting
+
+**Quick checks:**
+
+- **Is your public URL reachable?** Open in a browser: `https://YOUR_BASE_URL/api/webhooks/ping` (e.g. your ngrok URL + `/api/webhooks/ping`). You should see `{"ok":true,...}`. If it doesn’t load, Twilio can’t reach your app.
+- **Debug config:** Open `http://localhost:3000/api/debug` (or your public URL + `/api/debug`). It shows whether Twilio is configured, your BASE_URL, and recent pending sessions.
 
 1. **BASE_URL must be public**  
    If `BASE_URL` is `http://localhost:3000`, Twilio cannot reach your app when the call is answered, so the call can fail or drop. Use ngrok (or a deployed URL) and set `BASE_URL` to that URL in `.env`.

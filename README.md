@@ -72,6 +72,30 @@ guardian-ai/
 - **Database**: SQLite (better-sqlite3)
 - **APIs**: Twilio (calls, SMS, transcription), OpenAI (intent classification)
 - **Scheduler**: node-cron (every minute)
+- **Hardware Integration**: Raspberry Pi with GPIO alerts (optional)
+
+## Raspberry Pi Integration
+
+Guardian AI can trigger instant visual and auditory alerts on a Raspberry Pi when distress is detected:
+
+```bash
+# Quick start on Raspberry Pi
+pip3 install RPi.GPIO requests python-dotenv
+python3 scripts/distress_signal_pi_simple.py
+```
+
+The Raspberry Pi script:
+- 🔴 **LED Alert**: Rapid flashing when escalation detected
+- 🔊 **Buzzer Alert**: Synchronized sound alert
+- 📊 **Continuous Alert**: LED + buzzer pulse until resolved
+- 🔘 **Dismiss Button**: Manual silence button (full version)
+
+**Setup Options:**
+- **Quick Start**: [QUICK_START_PI.md](scripts/QUICK_START_PI.md) (5 minutes)
+- **Full Setup**: [RASPBERRY_PI_SETUP.md](scripts/RASPBERRY_PI_SETUP.md) (detailed)
+- **Scripts**: 
+  - `distress_signal_pi_simple.py` - Basic implementation
+  - `distress_signal_pi.py` - Advanced with button control
 
 See [SETUP.md](SETUP.md) for full setup, Twilio configuration, ngrok testing, and deployment.
 

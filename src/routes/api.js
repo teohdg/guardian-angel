@@ -6,14 +6,17 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const validator = require('validator');
 const {
+  db,
   createSession,
   addEmergencyContacts,
   getSession,
   logEvent,
   updateSessionStatus,
+  updateSessionLocation,
+  getEmergencyContacts,
 } = require('../db');
 const { addSession } = require('../scheduler');
-const { initiateCheckInCall } = require('../services/twilio');
+const { initiateCheckInCall, sendSMS } = require('../services/twilio');
 
 function generateId() {
   return uuidv4();
@@ -51,6 +54,7 @@ router.post('/activate', (req, res) => {
       safeWord,
       escalationWord,
       scheduledAt,
+      location = null,
       contacts = [],
     } = req.body;
 
@@ -99,6 +103,7 @@ router.post('/activate', (req, res) => {
       safeWord: String(safeWord).trim(),
       escalationWord: String(escalationWord).trim(),
       scheduledAt: scheduledDate.toISOString(),
+      location: location ? String(location).trim() : null,
     });
 
     addEmergencyContacts(sessionId, contactList);
@@ -119,6 +124,46 @@ router.post('/activate', (req, res) => {
     console.error('Activate error:', err);
     res.status(500).json({ error: err.message || 'Internal server error' });
   }
+});
+
+/**
+ * POST /api/clear-due
+ * Admin endpoint to mark all past pending sessions as completed.
+ * Useful when you want to clear out 'due' calls without running them.
+ */
+router.post('/clear-due', (req, res) => {
+  try {
+    const result = db.prepare(
+      "UPDATE sessions SET status='completed' WHERE status='pending' AND scheduled_at <= datetime('now')"
+    ).run();
+    res.json({ success: true, updated: result.changes });
+  } catch (err) {
+    console.error('Clear-due error:', err);
+    res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/debug
+ * Check config and recent sessions (no secrets). Use to see why calls might not be going through.
+ */
+router.get('/debug', (req, res) => {
+  const { db } = require('../db');
+  const hasTwilio = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER);
+  const baseUrl = process.env.BASE_URL || '';
+  const isPublicUrl = baseUrl && !baseUrl.includes('localhost');
+  const pending = db.prepare(
+    "SELECT id, user_phone, scheduled_at, status FROM sessions WHERE status = 'pending' ORDER BY scheduled_at DESC LIMIT 5"
+  ).all();
+  res.json({
+    twilioConfigured: hasTwilio,
+    baseUrl: baseUrl || '(not set)',
+    baseUrlIsPublic: isPublicUrl,
+    hint: !isPublicUrl ? 'Set BASE_URL to your public URL (ngrok or deployed) so Twilio can reach your webhooks.' : null,
+    pendingSessionsCount: pending.length,
+    pendingSessions: pending,
+    serverTime: new Date().toISOString(),
+  });
 });
 
 /**
@@ -173,6 +218,83 @@ router.post('/call-now/:sessionId', async (req, res) => {
     res.status(500).json({
       error: err.message || 'Failed to initiate call',
     });
+  }
+});
+
+/**
+ * POST /api/send-location
+ * User submits their location during an emergency
+ * Body: { sessionId, location }
+ */
+router.post('/send-location', async (req, res) => {
+  try {
+    const { sessionId, location } = req.body;
+
+    if (!sessionId || !location) {
+      return res.status(400).json({
+        error: 'Missing required fields: sessionId, location',
+      });
+    }
+
+    const session = getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    const locationStr = String(location).trim();
+    if (locationStr.length === 0 || locationStr.length > 500) {
+      return res.status(400).json({
+        error: 'Location must be 1-500 characters',
+      });
+    }
+
+    // Update session with location
+    updateSessionLocation(sessionId, locationStr);
+
+    logEvent(sessionId, 'location_submitted', {
+      location: locationStr,
+      submittedAt: new Date().toISOString(),
+    });
+
+    console.log('[Location] User submitted location for', sessionId, ':', locationStr);
+
+    // Send updated SMS to all emergency contacts with the new location
+    const contacts = getEmergencyContacts(sessionId);
+    const updatedSmsBody = `🚨 GUARDIAN AI - LOCATION UPDATE 🚨
+
+User ${session.user_phone} has provided their location.
+
+Location: ${locationStr}
+
+Please check on them immediately.
+
+This is an automated alert from Guardian AI.`;
+
+    for (const contact of contacts) {
+      try {
+        await sendSMS(contact.phone_number, updatedSmsBody);
+        logEvent(sessionId, 'location_update_sms_sent', {
+          to: contact.phone_number,
+          location: locationStr,
+        });
+        console.log('[Location] Updated SMS sent to:', contact.phone_number);
+      } catch (err) {
+        console.error('[Location] SMS failed to', contact.phone_number, ':', err.message);
+        logEvent(sessionId, 'location_update_sms_failed', {
+          to: contact.phone_number,
+          error: err.message,
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Location received and sent to emergency contacts',
+      location: locationStr,
+    });
+  } catch (err) {
+    console.error('Send location error:', err);
+    res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
 

@@ -81,27 +81,20 @@ async function initiateCheckInCall(toPhone, sessionId) {
  * Generate TwiML for the check-in call
  * - Plays greeting
  * - Records user response with transcription enabled
- * - Transcribe callback receives the transcribed text
  */
 function generateVoiceTwiML(sessionId) {
-  const recordUrl = `${baseUrl}/api/webhooks/recording-complete?sessionId=${sessionId}`;
-  const transcribeUrl = `${baseUrl}/api/webhooks/transcription?sessionId=${sessionId}`;
+  if (!baseUrl || baseUrl.includes('localhost')) {
+    console.error('[TwiML] ERROR: baseUrl is not configured properly', { baseUrl });
+    return '<?xml version="1.0" encoding="UTF-8"?><Response><Say>Error: Server is not configured for Twilio. BASE_URL must be set to a public URL.</Say></Response>';
+  }
 
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say voice="alice" language="en-US">
-    Hey, just checking in. Everything good?
-  </Say>
-  <Record 
-    maxLength="30" 
-    playBeep="true"
-    transcribe="true"
-    transcribeCallback="${transcribeUrl}"
-    recordingStatusCallback="${recordUrl}"
-    recordingStatusCallbackEvent="completed"
-    action="${baseUrl}/api/webhooks/recording-complete?sessionId=${sessionId}"
-  />
-</Response>`;
+  const recordUrl = `${baseUrl}/api/webhooks/recording-complete?sessionId=${sessionId}`;
+
+  // Compact, single-line TwiML to avoid whitespace parsing issues
+  const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="alice" language="en-US">Hey, just checking in. Everything good?</Say><Record maxLength="30" playBeep="true" finishOnKey="#" transcribe="true" action="${recordUrl}"/></Response>`;
+
+  console.log('[TwiML] Generated voice TwiML:', { sessionId, baseUrl, urlLength: recordUrl.length, twimlLength: twiml.length });
+  return twiml;
 }
 
 /**
@@ -119,9 +112,13 @@ async function sendSMS(toPhone, message) {
 
 /**
  * Initiate outbound call (Level 2 escalation - call primary contact)
+ * @param {string} toPhone - Emergency contact phone number
+ * @param {string} sessionId - Session ID
+ * @param {string} userPhone - Original caller's phone number
  */
 async function initiateEmergencyCall(toPhone, sessionId, userPhone) {
   const client = getClient();
+  // Location will be retrieved from database in the webhook
   const voiceUrl = `${baseUrl}/api/webhooks/emergency-call?sessionId=${sessionId}&userPhone=${encodeURIComponent(userPhone)}`;
   
   const call = await client.calls.create({
@@ -136,19 +133,14 @@ async function initiateEmergencyCall(toPhone, sessionId, userPhone) {
 
 /**
  * Generate TwiML for emergency call to primary contact
+ * @param {string} userPhone - Original caller's phone number
+ * @param {string} location - Optional location information
  */
-function generateEmergencyCallTwiML(userPhone) {
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say voice="alice" language="en-US">
-    This is Guardian AI. We have received a distress signal from ${userPhone}. 
-    Please check on them immediately. This is an automated emergency alert.
-  </Say>
-  <Pause length="2"/>
-  <Say voice="alice" language="en-US">
-    Again, please check on ${userPhone} immediately. Goodbye.
-  </Say>
-</Response>`;
+function generateEmergencyCallTwiML(userPhone, location = null) {
+  // Read phone number digit by digit by adding spaces between digits
+  const phoneDigits = String(userPhone).replace(/\D/g, '').split('').join(' ');
+  const locationMsg = location ? `Their location is ${location}. ` : '';
+  return `<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="alice" language="en-US">This is Guardian AI. We have received a distress signal from ${phoneDigits}. Please check on them immediately. ${locationMsg}This is an automated emergency alert.</Say><Pause length="2"/><Say voice="alice" language="en-US">Again, please check on ${phoneDigits} immediately. Goodbye.</Say></Response>`;
 }
 
 module.exports = {

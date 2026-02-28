@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     user_phone TEXT NOT NULL,
     safe_word TEXT NOT NULL,
     escalation_word TEXT NOT NULL,
+    location TEXT,                        -- Optional user location for emergency alerts
     scheduled_at TEXT NOT NULL,           -- ISO 8601 datetime
     status TEXT DEFAULT 'pending',       -- pending, active, completed, escalated, cancelled
     created_at TEXT DEFAULT (datetime('now')),

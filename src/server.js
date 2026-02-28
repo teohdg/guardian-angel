@@ -20,6 +20,9 @@ const publicPath = path.join(__dirname, '../public');
 app.use(cors());
 app.use(express.json());
 
+// Trust proxy (ngrok adds X-Forwarded-For headers)
+app.set('trust proxy', 1);
+
 // Rate limiting - protect against abuse
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -36,11 +39,18 @@ const webhookLimiter = rateLimit({
 app.use('/api/webhooks', webhookLimiter);
 
 // --- Routes ---
-app.use('/api', apiRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api', apiRoutes);
+
 
 // Static frontend (index.html at / and other files)
 app.use(express.static(publicPath));
+
+// Location submission form
+app.get('/location', (req, res) => {
+  res.sendFile(path.join(publicPath, 'location.html'));
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));
 });
