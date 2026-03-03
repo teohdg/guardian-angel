@@ -2,60 +2,6 @@
 
 A proactive safety system that automatically calls users at scheduled times, listens for a safe word or escalation word, and sends SMS alerts to emergency contacts when help is needed.
 
-## Quick Start
-
-```bash
-npm install
-npm run init-db
-cp .env.example .env
-# Edit .env with your Twilio and OpenAI keys
-npm start
-```
-
-Open http://localhost:3000
-
-**For local testing with Twilio webhooks**, use [ngrok](https://ngrok.com) and set `BASE_URL` to your ngrok URL.
-
-## Project Structure
-
-```
-guardian-ai/
-├── public/
-│   └── index.html          # Minimal frontend
-├── src/
-│   ├── db/
-│   │   ├── schema.sql      # SQLite schema
-│   │   ├── init.js         # DB init script
-│   │   └── index.js        # DB helpers
-│   ├── routes/
-│   │   ├── api.js          # REST API (activate, session, events)
-│   │   └── webhooks.js     # Twilio webhooks (voice, transcription, etc.)
-│   ├── scheduler/
-│   │   └── index.js        # Cron job - checks for due sessions every minute
-│   ├── services/
-│   │   ├── twilio.js       # Calls, SMS, TwiML
-│   │   ├── openai.js       # Intent classification
-│   │   ├── wordDetector.js # Safe/escalation word detection
-│   │   └── escalation.js   # Level 1 (SMS) + Level 2 (call primary)
-│   ├── utils/
-│   │   └── logger.js       # Event logging
-│   └── server.js           # Express app
-├── data/
-│   └── guardian.db         # SQLite (created on init)
-├── .env.example
-├── package.json
-├── README.md
-└── SETUP.md                # Detailed setup & deployment
-```
-
-## API Routes
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | /api/activate | Create and schedule a check-in session |
-| GET | /api/session/:id | Get session details |
-| GET | /api/events/:sessionId | Get event log (debugging) |
-
 ## Flow
 
 1. User activates with phone, safe word, escalation word, scheduled time, emergency contacts
